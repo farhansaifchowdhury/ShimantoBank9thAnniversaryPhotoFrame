@@ -18,72 +18,39 @@
     background: #f0f0f0;
   }
 
-  h1 {
-    font-size: 28px;
-    margin-bottom: 10px;
-    color: #003366;
-  }
+  h1 { font-size: 28px; margin-bottom: 10px; color: #003366; }
+  #logo { max-width: 250px; height: auto; margin-bottom: 20px; }
+  h2 { margin-bottom: 20px; font-size: 20px; color: #333; }
 
-  #logo {
-    max-width: 250px;
-    height: auto;
-    margin-bottom: 20px;
-  }
-
-  h2 {
-    margin-bottom: 20px;
-    font-size: 20px;
-    color: #333;
-  }
-
-  /* Responsive frame container */
   #frameContainer {
     position: relative;
-    width: 90vw;       /* responsive width */
-    max-width: 400px;  /* max width for desktop */
-    aspect-ratio: 1 / 1; /* keep square */
+    width: 90vw;
+    max-width: 400px;
+    aspect-ratio: 1/1;
     overflow: hidden;
     margin-bottom: 20px;
     display: flex;
     justify-content: center;
     align-items: center;
-    background: #ffffff; /* optional: background for letterboxing */
+    background: #fff;
   }
 
-  /* User photo */
-  #userPhoto {
-    width: 100%;
-    height: 100%;
-    object-fit: contain; /* maintain original aspect ratio */
-  }
-
-  /* Frame */
+  #userPhoto { width: 100%; height: 100%; object-fit: contain; }
   #frame {
     position: absolute;
-    top: 50%;
-    left: 50%;
+    top: 50%; left: 50%;
     transform: translate(-50%, -50%);
-    width: auto;
-    height: 100%;
+    width: auto; height: 100%;
     pointer-events: none;
   }
 
-  /* Buttons style */
   button, input[type="file"] {
-    margin: 10px 0;
-    padding: 10px 20px;
-    font-size: 16px;
-    font-weight: bold;
-    color: #ffffff;
-    background-color: #800000;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
+    margin: 10px 0; padding: 10px 20px;
+    font-size: 16px; font-weight: bold;
+    color: #fff; background-color: #800000;
+    border: none; border-radius: 5px; cursor: pointer;
   }
-
-  button:hover, input[type="file"]:hover {
-    background-color: #a00000;
-  }
+  button:hover, input[type="file"]:hover { background-color: #a00000; }
 </style>
 </head>
 <body>
@@ -96,46 +63,61 @@
 
 <div id="frameContainer">
   <img id="userPhoto" src="" alt="Your Photo">
-  <img id="frame" src="Shimanto.png" alt="Frame" crossOrigin="anonymous">
+  <img id="frame" src="Shimanto.png" alt="Frame">
 </div>
 
 <button id="downloadBtn">Download / Save Image</button>
 
-<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script>
-  const uploadPhoto = document.getElementById('uploadPhoto');
-  const userPhoto = document.getElementById('userPhoto');
-  const downloadBtn = document.getElementById('downloadBtn');
-  const frameContainer = document.getElementById('frameContainer');
+const uploadPhoto = document.getElementById('uploadPhoto');
+const userPhoto = document.getElementById('userPhoto');
+const frameImg = document.getElementById('frame');
+const downloadBtn = document.getElementById('downloadBtn');
 
-  // Upload user photo
-  uploadPhoto.addEventListener('change', (event) => {
-    const file = event.target.files[0];
-    if(file){
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        userPhoto.src = e.target.result;
-      }
-      reader.readAsDataURL(file);
+let uploadedImg = new Image();
+
+uploadPhoto.addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(file){
+    const reader = new FileReader();
+    reader.onload = (ev)=>{
+      uploadedImg.src = ev.target.result;
+      userPhoto.src = ev.target.result;
     }
-  });
+    reader.readAsDataURL(file);
+  }
+});
 
-  // Download combined image
-  downloadBtn.addEventListener('click', () => {
-    html2canvas(frameContainer, {useCORS: true, scale: 2}).then(canvas => {
-      const image = canvas.toDataURL('image/png');
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      if(isMobile){
-        const w = window.open('');
-        w.document.write('<img src="' + image + '" alt="Framed Photo"/>');
-      } else {
-        const link = document.createElement('a');
-        link.download = 'framed-photo.png';
-        link.href = image;
-        link.click();
-      }
-    });
-  });
+downloadBtn.addEventListener('click', ()=>{
+  if(!uploadedImg.src) return alert("Please upload a photo first.");
+
+  // Create a hidden canvas
+  const canvas = document.createElement('canvas');
+  const frameNaturalWidth = frameImg.naturalWidth;
+  const frameNaturalHeight = frameImg.naturalHeight;
+
+  // Use the frame’s natural dimensions as base
+  canvas.width = frameNaturalWidth;
+  canvas.height = frameNaturalHeight;
+  const ctx = canvas.getContext('2d');
+
+  // Draw uploaded image centered, preserving aspect ratio
+  const scale = Math.min(canvas.width / uploadedImg.width, canvas.height / uploadedImg.height);
+  const w = uploadedImg.width * scale;
+  const h = uploadedImg.height * scale;
+  const x = (canvas.width - w)/2;
+  const y = (canvas.height - h)/2;
+  ctx.drawImage(uploadedImg, x, y, w, h);
+
+  // Draw frame on top
+  ctx.drawImage(frameImg, 0, 0, canvas.width, canvas.height);
+
+  // Export as JPEG
+  const link = document.createElement('a');
+  link.href = canvas.toDataURL('image/jpeg', 1.0);
+  link.download = 'framed-photo.jpg';
+  link.click();
+});
 </script>
 
 </body>
