@@ -18,57 +18,10 @@
     background: #f0f0f0;
   }
 
-  h1 {
-    font-size: 28px;
-    margin-bottom: 10px;
-    color: #003366;
-  }
+  h1 { font-size: 28px; margin-bottom: 10px; color: #003366; }
+  #logo { max-width: 250px; height: auto; margin-bottom: 20px; }
+  h2 { margin-bottom: 20px; font-size: 20px; color: #333; }
 
-  #logo {
-    max-width: 250px;
-    height: auto;
-    margin-bottom: 20px;
-  }
-
-  h2 {
-    margin-bottom: 20px;
-    font-size: 20px;
-    color: #333;
-  }
-
-  /* Responsive frame container */
-  #frameContainer {
-    position: relative;
-    width: 90vw;       /* responsive width */
-    max-width: 400px;  /* max width for desktop */
-    aspect-ratio: 1 / 1; /* keep square */
-    overflow: hidden;
-    margin-bottom: 20px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background: #ffffff; /* optional: background for letterboxing */
-  }
-
-  /* User photo */
-  #userPhoto {
-    width: 100%;
-    height: 100%;
-    object-fit: contain; /* maintain original aspect ratio */
-  }
-
-  /* Frame */
-  #frame {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: auto;
-    height: 100%;
-    pointer-events: none;
-  }
-
-  /* Buttons style */
   button, input[type="file"] {
     margin: 10px 0;
     padding: 10px 20px;
@@ -80,10 +33,9 @@
     border-radius: 5px;
     cursor: pointer;
   }
+  button:hover, input[type="file"]:hover { background-color: #a00000; }
 
-  button:hover, input[type="file"]:hover {
-    background-color: #a00000;
-  }
+  canvas { display: block; margin-bottom: 20px; max-width: 90vw; }
 </style>
 </head>
 <body>
@@ -94,48 +46,60 @@
 <h2>Add Your Photo to the Frame</h2>
 <input type="file" id="uploadPhoto" accept="image/*">
 
-<div id="frameContainer">
-  <img id="userPhoto" src="" alt="Your Photo">
-  <img id="frame" src="Shimanto.png" alt="Frame" crossOrigin="anonymous">
-</div>
+<canvas id="canvas" width="400" height="400"></canvas>
 
 <button id="downloadBtn">Download / Save Image</button>
 
-<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script>
-  const uploadPhoto = document.getElementById('uploadPhoto');
-  const userPhoto = document.getElementById('userPhoto');
-  const downloadBtn = document.getElementById('downloadBtn');
-  const frameContainer = document.getElementById('frameContainer');
+const uploadPhoto = document.getElementById('uploadPhoto');
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const downloadBtn = document.getElementById('downloadBtn');
 
-  // Upload user photo
-  uploadPhoto.addEventListener('change', (event) => {
-    const file = event.target.files[0];
-    if(file){
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        userPhoto.src = e.target.result;
-      }
-      reader.readAsDataURL(file);
+let userImg = new Image();
+let frameImg = new Image();
+frameImg.src = 'Shimanto.png'; // your frame image
+
+// Draw function
+function drawCanvas() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  if(userImg.src) {
+    // calculate aspect ratio
+    let ratio = Math.min(canvas.width / userImg.width, canvas.height / userImg.height);
+    let w = userImg.width * ratio;
+    let h = userImg.height * ratio;
+    let x = (canvas.width - w)/2;
+    let y = (canvas.height - h)/2;
+    ctx.drawImage(userImg, x, y, w, h);
+  }
+  if(frameImg.complete) {
+    ctx.drawImage(frameImg, 0, 0, canvas.width, canvas.height);
+  }
+}
+
+// Upload user photo
+uploadPhoto.addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(file){
+    const reader = new FileReader();
+    reader.onload = (ev)=>{
+      userImg.src = ev.target.result;
+      userImg.onload = drawCanvas;
     }
-  });
+    reader.readAsDataURL(file);
+  }
+});
 
-  // Download combined image
-  downloadBtn.addEventListener('click', () => {
-    html2canvas(frameContainer, {useCORS: true, scale: 2}).then(canvas => {
-      const image = canvas.toDataURL('image/png');
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      if(isMobile){
-        const w = window.open('');
-        w.document.write('<img src="' + image + '" alt="Framed Photo"/>');
-      } else {
-        const link = document.createElement('a');
-        link.download = 'framed-photo.png';
-        link.href = image;
-        link.click();
-      }
-    });
-  });
+// Redraw frame if loaded later
+frameImg.onload = drawCanvas;
+
+// Download image
+downloadBtn.addEventListener('click', ()=>{
+  const link = document.createElement('a');
+  link.href = canvas.toDataURL('image/png');
+  link.download = 'framed-photo.png';
+  link.click();
+});
 </script>
 
 </body>
