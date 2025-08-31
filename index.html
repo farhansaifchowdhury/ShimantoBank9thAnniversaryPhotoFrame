@@ -35,4 +35,102 @@
   }
   button:hover, input[type="file"]:hover { background-color: #a00000; }
 
-  canvas { display: block; margin-b
+  canvas { display: block; margin-bottom: 20px; max-width: 90vw; }
+</style>
+</head>
+<body>
+
+<h1>Shimanto Bank 9th Year Anniversary</h1>
+<img id="logo" src="Logo.png" alt="Logo">
+
+<h2>Add Your Photo to the Frame</h2>
+<input type="file" id="uploadPhoto" accept="image/*">
+
+<canvas id="canvas"></canvas>
+
+<button id="downloadBtn">Download / Save Image</button>
+
+<script>
+const uploadPhoto = document.getElementById('uploadPhoto');
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const downloadBtn = document.getElementById('downloadBtn');
+
+let userImg = new Image();
+let frameImg = new Image();
+frameImg.src = 'Shimanto.png'; // your frame image
+
+// Draw the uploaded photo and frame
+function drawCanvas() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  if(userImg.src){
+    // Fit the uploaded image into canvas, preserve aspect ratio
+    let scale = Math.min(canvas.width / userImg.width, canvas.height / userImg.height);
+    let w = userImg.width * scale;
+    let h = userImg.height * scale;
+    let x = (canvas.width - w)/2;
+    let y = (canvas.height - h)/2;
+    ctx.drawImage(userImg, x, y, w, h);
+  }
+  if(frameImg.complete){
+    ctx.drawImage(frameImg, 0, 0, canvas.width, canvas.height);
+  }
+}
+
+// Resize canvas based on viewport, preserve uploaded photo scale
+function resizeCanvas() {
+  const maxWidth = window.innerWidth * 0.9;
+  const maxHeight = window.innerHeight * 0.6;
+  canvas.width = maxWidth;
+  canvas.height = maxHeight;
+  drawCanvas();
+}
+
+// Upload user photo
+uploadPhoto.addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(file){
+    const reader = new FileReader();
+    reader.onload = (ev)=>{
+      userImg.src = ev.target.result;
+      userImg.onload = drawCanvas;
+    }
+    reader.readAsDataURL(file);
+  }
+});
+
+// Redraw frame when loaded
+frameImg.onload = drawCanvas;
+
+// Responsive canvas
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas(); // initial
+
+// Download JPEG at max quality
+downloadBtn.addEventListener('click', ()=>{
+  const scale = 2; // high resolution
+  const tmpCanvas = document.createElement('canvas');
+  tmpCanvas.width = canvas.width * scale;
+  tmpCanvas.height = canvas.height * scale;
+  const tmpCtx = tmpCanvas.getContext('2d');
+
+  if(userImg.src){
+    const scaleFactor = Math.min(tmpCanvas.width / userImg.width, tmpCanvas.height / userImg.height);
+    const w = userImg.width * scaleFactor;
+    const h = userImg.height * scaleFactor;
+    const x = (tmpCanvas.width - w)/2;
+    const y = (tmpCanvas.height - h)/2;
+    tmpCtx.drawImage(userImg, x, y, w, h);
+  }
+
+  tmpCtx.drawImage(frameImg, 0, 0, tmpCanvas.width, tmpCanvas.height);
+
+  const link = document.createElement('a');
+  link.href = tmpCanvas.toDataURL('image/jpeg', 1.0);
+  link.download = 'framed-photo.jpg';
+  link.click();
+});
+</script>
+
+</body>
+</html>
