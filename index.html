@@ -64,12 +64,11 @@ frameImg.src = 'Shimanto.png'; // your frame image
 function drawCanvas() {
   ctx.clearRect(0,0,canvas.width,canvas.height);
   if(userImg.src) {
-    // calculate aspect ratio
-    let ratio = Math.min(canvas.width / userImg.width, canvas.height / userImg.height);
-    let w = userImg.width * ratio;
-    let h = userImg.height * ratio;
-    let x = (canvas.width - w)/2;
-    let y = (canvas.height - h)/2;
+    // Scale user photo to canvas width, maintain aspect ratio in height
+    let w = canvas.width;
+    let h = userImg.height * (canvas.width / userImg.width);
+    let x = 0;
+    let y = (canvas.height - h)/2; // center vertically
     ctx.drawImage(userImg, x, y, w, h);
   }
   if(frameImg.complete) {
