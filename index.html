@@ -46,7 +46,7 @@
 <h2>Add Your Photo to the Frame</h2>
 <input type="file" id="uploadPhoto" accept="image/*">
 
-<canvas id="canvas" width="400" height="400"></canvas>
+<canvas id="canvas"></canvas>
 
 <button id="downloadBtn">Download / Save Image</button>
 
@@ -60,15 +60,27 @@ let userImg = new Image();
 let frameImg = new Image();
 frameImg.src = 'Shimanto.png'; // your frame image
 
+// Function to resize canvas based on viewport
+function resizeCanvas() {
+  const maxWidth = window.innerWidth * 0.9; // 90% viewport width
+  canvas.width = maxWidth;
+  if(userImg.src) {
+    const scale = canvas.width / userImg.width;
+    canvas.height = userImg.height * scale;
+  } else {
+    canvas.height = canvas.width; // default square if no photo yet
+  }
+  drawCanvas();
+}
+
 // Draw function
 function drawCanvas() {
   ctx.clearRect(0,0,canvas.width,canvas.height);
   if(userImg.src) {
-    // Scale user photo to canvas width, maintain aspect ratio in height
     let w = canvas.width;
     let h = userImg.height * (canvas.width / userImg.width);
     let x = 0;
-    let y = (canvas.height - h)/2; // center vertically
+    let y = (canvas.height - h)/2;
     ctx.drawImage(userImg, x, y, w, h);
   }
   if(frameImg.complete) {
@@ -76,26 +88,49 @@ function drawCanvas() {
   }
 }
 
-// Upload user photo
+// Handle photo upload
 uploadPhoto.addEventListener('change', (e)=>{
   const file = e.target.files[0];
   if(file){
     const reader = new FileReader();
     reader.onload = (ev)=>{
       userImg.src = ev.target.result;
-      userImg.onload = drawCanvas;
+      userImg.onload = () => {
+        resizeCanvas();
+      };
     }
     reader.readAsDataURL(file);
   }
 });
 
-// Redraw frame if loaded later
-frameImg.onload = drawCanvas;
+// Redraw frame when loaded
+frameImg.onload = () => {
+  resizeCanvas();
+}
+
+// Resize canvas when window changes
+window.addEventListener('resize', () => {
+  resizeCanvas();
+});
 
 // Download image
 downloadBtn.addEventListener('click', ()=>{
+  // use higher resolution for download
+  const scale = 2;
+  const tmpCanvas = document.createElement('canvas');
+  tmpCanvas.width = canvas.width * scale;
+  tmpCanvas.height = canvas.height * scale;
+  const tmpCtx = tmpCanvas.getContext('2d');
+
+  // Draw user image
+  if(userImg.src){
+    tmpCtx.drawImage(userImg, 0, 0, tmpCanvas.width, userImg.height * (tmpCanvas.width / userImg.width));
+  }
+  // Draw frame
+  tmpCtx.drawImage(frameImg, 0, 0, tmpCanvas.width, tmpCanvas.height);
+
   const link = document.createElement('a');
-  link.href = canvas.toDataURL('image/png');
+  link.href = tmpCanvas.toDataURL('image/png');
   link.download = 'framed-photo.png';
   link.click();
 });
