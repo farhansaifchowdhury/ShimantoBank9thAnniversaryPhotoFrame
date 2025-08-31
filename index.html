@@ -35,20 +35,31 @@
     background: #fff;
   }
 
-  #userPhoto { width: 100%; height: 100%; object-fit: contain; }
+  #userPhoto {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
   #frame {
     position: absolute;
     top: 50%; left: 50%;
     transform: translate(-50%, -50%);
-    width: auto; height: 100%;
+    width: auto;
+    height: 100%;
     pointer-events: none;
   }
 
   button, input[type="file"] {
-    margin: 10px 0; padding: 10px 20px;
-    font-size: 16px; font-weight: bold;
-    color: #fff; background-color: #800000;
-    border: none; border-radius: 5px; cursor: pointer;
+    margin: 10px 0;
+    padding: 10px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    color: #fff;
+    background-color: #800000;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
   }
   button:hover, input[type="file"]:hover { background-color: #a00000; }
 </style>
@@ -91,17 +102,14 @@ uploadPhoto.addEventListener('change', (e)=>{
 downloadBtn.addEventListener('click', ()=>{
   if(!uploadedImg.src) return alert("Please upload a photo first.");
 
-  // Create a hidden canvas
+  // Use frame's natural dimensions for high-res output
+  const scaleFactor = 2; // increase for higher resolution
   const canvas = document.createElement('canvas');
-  const frameNaturalWidth = frameImg.naturalWidth;
-  const frameNaturalHeight = frameImg.naturalHeight;
-
-  // Use the frame’s natural dimensions as base
-  canvas.width = frameNaturalWidth;
-  canvas.height = frameNaturalHeight;
+  canvas.width = frameImg.naturalWidth * scaleFactor;
+  canvas.height = frameImg.naturalHeight * scaleFactor;
   const ctx = canvas.getContext('2d');
 
-  // Draw uploaded image centered, preserving aspect ratio
+  // Draw uploaded photo, preserving aspect ratio
   const scale = Math.min(canvas.width / uploadedImg.width, canvas.height / uploadedImg.height);
   const w = uploadedImg.width * scale;
   const h = uploadedImg.height * scale;
@@ -112,7 +120,7 @@ downloadBtn.addEventListener('click', ()=>{
   // Draw frame on top
   ctx.drawImage(frameImg, 0, 0, canvas.width, canvas.height);
 
-  // Export as JPEG
+  // Download as JPEG at max quality
   const link = document.createElement('a');
   link.href = canvas.toDataURL('image/jpeg', 1.0);
   link.download = 'framed-photo.jpg';
