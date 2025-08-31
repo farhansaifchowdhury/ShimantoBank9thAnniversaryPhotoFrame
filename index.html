@@ -58,27 +58,35 @@ const downloadBtn = document.getElementById('downloadBtn');
 
 let userImg = new Image();
 let frameImg = new Image();
-frameImg.src = 'Shimanto.png'; // your frame image
+frameImg.src = 'Shimanto.png'; // frame image
 
-// Draw the uploaded photo and frame
+// Draw user photo and frame
 function drawCanvas() {
   ctx.clearRect(0,0,canvas.width,canvas.height);
+
   if(userImg.src){
-    // Fit the uploaded image into canvas, preserve aspect ratio
-    let scale = Math.min(canvas.width / userImg.width, canvas.height / userImg.height);
-    let w = userImg.width * scale;
-    let h = userImg.height * scale;
-    let x = (canvas.width - w)/2;
-    let y = (canvas.height - h)/2;
+    // Preserve uploaded photo aspect ratio
+    const scale = Math.min(canvas.width / userImg.width, canvas.height / userImg.height);
+    const w = userImg.width * scale;
+    const h = userImg.height * scale;
+    const x = (canvas.width - w)/2;
+    const y = (canvas.height - h)/2;
     ctx.drawImage(userImg, x, y, w, h);
   }
+
   if(frameImg.complete){
-    ctx.drawImage(frameImg, 0, 0, canvas.width, canvas.height);
+    // Draw frame preserving its original aspect ratio
+    const frameScale = Math.min(canvas.width / frameImg.width, canvas.height / frameImg.height);
+    const frameW = frameImg.width * frameScale;
+    const frameH = frameImg.height * frameScale;
+    const frameX = (canvas.width - frameW)/2;
+    const frameY = (canvas.height - frameH)/2;
+    ctx.drawImage(frameImg, frameX, frameY, frameW, frameH);
   }
 }
 
-// Resize canvas based on viewport, preserve uploaded photo scale
-function resizeCanvas() {
+// Responsive canvas
+function resizeCanvas(){
   const maxWidth = window.innerWidth * 0.9;
   const maxHeight = window.innerHeight * 0.6;
   canvas.width = maxWidth;
@@ -101,19 +109,18 @@ uploadPhoto.addEventListener('change', (e)=>{
 
 // Redraw frame when loaded
 frameImg.onload = drawCanvas;
-
-// Responsive canvas
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas(); // initial
 
-// Download JPEG at max quality
+// Download as high-quality JPEG
 downloadBtn.addEventListener('click', ()=>{
-  const scale = 2; // high resolution
+  const scale = 2; // high-resolution
   const tmpCanvas = document.createElement('canvas');
   tmpCanvas.width = canvas.width * scale;
   tmpCanvas.height = canvas.height * scale;
   const tmpCtx = tmpCanvas.getContext('2d');
 
+  // Draw uploaded photo
   if(userImg.src){
     const scaleFactor = Math.min(tmpCanvas.width / userImg.width, tmpCanvas.height / userImg.height);
     const w = userImg.width * scaleFactor;
@@ -123,8 +130,15 @@ downloadBtn.addEventListener('click', ()=>{
     tmpCtx.drawImage(userImg, x, y, w, h);
   }
 
-  tmpCtx.drawImage(frameImg, 0, 0, tmpCanvas.width, tmpCanvas.height);
+  // Draw frame at original aspect ratio
+  const frameScale = Math.min(tmpCanvas.width / frameImg.width, tmpCanvas.height / frameImg.height);
+  const frameW = frameImg.width * frameScale;
+  const frameH = frameImg.height * frameScale;
+  const frameX = (tmpCanvas.width - frameW)/2;
+  const frameY = (tmpCanvas.height - frameH)/2;
+  tmpCtx.drawImage(frameImg, frameX, frameY, frameW, frameH);
 
+  // Save as JPEG at max quality
   const link = document.createElement('a');
   link.href = tmpCanvas.toDataURL('image/jpeg', 1.0);
   link.download = 'framed-photo.jpg';
