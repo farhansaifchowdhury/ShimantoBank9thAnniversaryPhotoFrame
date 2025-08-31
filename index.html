@@ -46,7 +46,7 @@
 <h2>Add Your Photo to the Frame</h2>
 <input type="file" id="uploadPhoto" accept="image/*">
 
-<canvas id="canvas" width="400" height="400"></canvas>
+<canvas id="canvas"></canvas>
 
 <button id="downloadBtn">Download / Save Image</button>
 
@@ -60,44 +60,73 @@ let userImg = new Image();
 let frameImg = new Image();
 frameImg.src = 'Shimanto.png'; // your frame image
 
-// Draw function
+// Resize canvas based on uploaded image
+function resizeCanvas() {
+  const maxWidth = window.innerWidth * 0.9; // responsive width
+  canvas.width = maxWidth;
+  if(userImg.src){
+    const scale = canvas.width / userImg.width;
+    canvas.height = userImg.height * scale;
+  } else {
+    canvas.height = canvas.width; // default square if no photo
+  }
+  drawCanvas();
+}
+
+// Draw user photo + frame
 function drawCanvas() {
   ctx.clearRect(0,0,canvas.width,canvas.height);
-  if(userImg.src) {
-    // calculate aspect ratio
-    let ratio = Math.min(canvas.width / userImg.width, canvas.height / userImg.height);
-    let w = userImg.width * ratio;
-    let h = userImg.height * ratio;
-    let x = (canvas.width - w)/2;
-    let y = (canvas.height - h)/2;
+  if(userImg.src){
+    const w = canvas.width;
+    const h = userImg.height * (canvas.width / userImg.width);
+    const x = 0;
+    const y = (canvas.height - h)/2;
     ctx.drawImage(userImg, x, y, w, h);
   }
-  if(frameImg.complete) {
+  if(frameImg.complete){
     ctx.drawImage(frameImg, 0, 0, canvas.width, canvas.height);
   }
 }
 
-// Upload user photo
+// Handle photo upload
 uploadPhoto.addEventListener('change', (e)=>{
   const file = e.target.files[0];
   if(file){
     const reader = new FileReader();
     reader.onload = (ev)=>{
       userImg.src = ev.target.result;
-      userImg.onload = drawCanvas;
+      userImg.onload = resizeCanvas;
     }
     reader.readAsDataURL(file);
   }
 });
 
-// Redraw frame if loaded later
-frameImg.onload = drawCanvas;
+// Redraw frame when loaded
+frameImg.onload = resizeCanvas;
 
-// Download image
+// Responsive canvas on window resize
+window.addEventListener('resize', ()=>{ resizeCanvas(); });
+
+// Download image as JPEG
 downloadBtn.addEventListener('click', ()=>{
+  const scale = 2; // high resolution
+  const tmpCanvas = document.createElement('canvas');
+  tmpCanvas.width = canvas.width * scale;
+  tmpCanvas.height = canvas.height * scale;
+  const tmpCtx = tmpCanvas.getContext('2d');
+
+  // Draw user photo
+  if(userImg.src){
+    tmpCtx.drawImage(userImg, 0, 0, tmpCanvas.width, userImg.height * (tmpCanvas.width / userImg.width));
+  }
+
+  // Draw frame at full resolution
+  tmpCtx.drawImage(frameImg, 0, 0, tmpCanvas.width, tmpCanvas.height);
+
+  // Convert to JPEG with quality 1 (highest)
   const link = document.createElement('a');
-  link.href = canvas.toDataURL('image/png');
-  link.download = 'framed-photo.png';
+  link.href = tmpCanvas.toDataURL('image/jpeg', 1.0);
+  link.download = 'framed-photo.jpg';
   link.click();
 });
 </script>
