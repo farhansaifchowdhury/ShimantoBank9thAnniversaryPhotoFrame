@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Shimanto Bank PLC.</title>
+<title>Photo Frame</title>
 <style>
   body, html {
     margin: 0;
@@ -20,38 +20,34 @@
 
   h1 { font-size: 28px; margin-bottom: 10px; color: #003366; }
   #logo { max-width: 250px; height: auto; margin-bottom: 20px; }
-  h2 { margin-bottom: 10px; font-size: 20px; color: #333; }
+  h2 { margin-bottom: 20px; font-size: 20px; color: #333; }
 
   #frameContainer {
     position: relative;
     width: 90vw;
     max-width: 400px;
-    aspect-ratio: 1 / 1;
+    aspect-ratio: 1/1;
     overflow: hidden;
-    margin-bottom: 10px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     background: #fff;
-    touch-action: none; /* important for mobile gestures */
-    border: 2px solid #800000;
   }
 
   #userPhoto {
-    position: absolute;
-    top: 0;
-    left: 0;
-    cursor: grab;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
   }
 
   #frame {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: auto;
     height: 100%;
     pointer-events: none;
-  }
-
-  input[type="range"] {
-    width: 200px;
   }
 
   button, input[type="file"] {
@@ -81,26 +77,16 @@
   <img id="frame" src="Shimanto.png" alt="Frame">
 </div>
 
-<label>Adjust:</label>
-<input type="range" id="zoomSlider" min="50" max="200" value="100">
-<br>
 <button id="downloadBtn">Download / Save Image</button>
 
 <script>
 const uploadPhoto = document.getElementById('uploadPhoto');
 const userPhoto = document.getElementById('userPhoto');
 const frameImg = document.getElementById('frame');
-const frameContainer = document.getElementById('frameContainer');
 const downloadBtn = document.getElementById('downloadBtn');
-const zoomSlider = document.getElementById('zoomSlider');
 
 let uploadedImg = new Image();
-let offsetX = 0, offsetY = 0;
-let startX = 0, startY = 0;
-let isDragging = false;
-let scale = 1;
 
-// Upload image
 uploadPhoto.addEventListener('change', (e)=>{
   const file = e.target.files[0];
   if(file){
@@ -108,67 +94,33 @@ uploadPhoto.addEventListener('change', (e)=>{
     reader.onload = (ev)=>{
       uploadedImg.src = ev.target.result;
       userPhoto.src = ev.target.result;
-      userPhoto.style.width = '100%';
-      userPhoto.style.height = 'auto';
-      userPhoto.style.top = '0px';
-      userPhoto.style.left = '0px';
-      scale = 1;
-      zoomSlider.value = 100;
     }
     reader.readAsDataURL(file);
   }
 });
 
-// Dragging
-userPhoto.addEventListener('pointerdown', (e)=>{
-  isDragging = true;
-  startX = e.clientX - offsetX;
-  startY = e.clientY - offsetY;
-  userPhoto.setPointerCapture(e.pointerId);
-});
-userPhoto.addEventListener('pointermove', (e)=>{
-  if(!isDragging) return;
-  offsetX = e.clientX - startX;
-  offsetY = e.clientY - startY;
-  userPhoto.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`;
-});
-userPhoto.addEventListener('pointerup', (e)=>{
-  isDragging = false;
-});
-userPhoto.addEventListener('pointerleave', (e)=>{
-  isDragging = false;
-});
-
-// Zoom
-zoomSlider.addEventListener('input', ()=>{
-  scale = zoomSlider.value / 100;
-  userPhoto.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`;
-});
-
-// Download high-res JPEG
 downloadBtn.addEventListener('click', ()=>{
   if(!uploadedImg.src) return alert("Please upload a photo first.");
 
-  const scaleFactor = 2;
+  // Use frame's natural dimensions for high-res output
+  const scaleFactor = 2; // increase for higher resolution
   const canvas = document.createElement('canvas');
   canvas.width = frameImg.naturalWidth * scaleFactor;
   canvas.height = frameImg.naturalHeight * scaleFactor;
   const ctx = canvas.getContext('2d');
 
-  // Calculate scaled photo position for canvas
-  const imgW = uploadedImg.width * scale;
-  const imgH = uploadedImg.height * scale;
+  // Draw uploaded photo, preserving aspect ratio
+  const scale = Math.min(canvas.width / uploadedImg.width, canvas.height / uploadedImg.height);
+  const w = uploadedImg.width * scale;
+  const h = uploadedImg.height * scale;
+  const x = (canvas.width - w)/2;
+  const y = (canvas.height - h)/2;
+  ctx.drawImage(uploadedImg, x, y, w, h);
 
-  const rect = frameContainer.getBoundingClientRect();
-  const containerW = rect.width;
-  const containerH = rect.height;
-
-  const relativeX = (offsetX / containerW) * canvas.width;
-  const relativeY = (offsetY / containerH) * canvas.height;
-
-  ctx.drawImage(uploadedImg, relativeX, relativeY, imgW*scaleFactor, imgH*scaleFactor);
+  // Draw frame on top
   ctx.drawImage(frameImg, 0, 0, canvas.width, canvas.height);
 
+  // Download as JPEG at max quality
   const link = document.createElement('a');
   link.href = canvas.toDataURL('image/jpeg', 1.0);
   link.download = 'framed-photo.jpg';
